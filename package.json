@@ -1,0 +1,28 @@
+{
+  "name": "mechanicode",
+  "version": "1.0.0",
+  "description": "a discord bot that renders p5 code",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hillexed/mechanicode.git"
+  },
+  "author": "hillexed",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hillexed/mechanicode/issues"
+  },
+  "homepage": "https://github.com/hillexed/mechanicode#readme",
+  "dependencies": {
+    "canvas": "^2.7.0",
+    "discord.js": "^12.5.1",
+    "dotenv": "^8.2.0",
+    "jsdom": "^16.4.0",
+    "node-p5": "^1.0.3",
+    "p5": "^1.2.0",
+    "vm2": "^3.9.2"
+  }
+}
