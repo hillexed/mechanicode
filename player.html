@@ -6,10 +6,10 @@
 <meta property="og:url" content="http://mechanicode.github.io/player.html?code='hi();'" />
 <meta property="og:image" content="http://www.nanrussell.com/wp-content/uploads/2016/08/Progress.jpg" />
 <script>
-    let url = new Url(this.url);
+    let url = new URL(document.location);
     let code = url.searchParams.get("code");
     window.addEventListener("onload", () => {
-        document.getElementById("code").innerHTML = code;
+        document.getElementById("code").innerHTML = code + "<br>"+ url;
     });
 </script>
 
@@ -22,7 +22,7 @@
 </head>
     <body>
         <div id="code">
-
+        No code detected.
         </div>
     </body>
 </html>
