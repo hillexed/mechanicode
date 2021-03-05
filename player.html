@@ -1,24 +1,22 @@
+<!DOCTYPE html>
 <html>
 <head>
-<title>Test Code Embed</title>
-<meta property="og:title" content="Test Code Embed" />
-<meta property="og:type" content="video.movie" />
-<meta property="og:url" content="http://mechanicode.github.io/player.html?code='hi();'" />
-<meta property="og:image" content="http://www.nanrussell.com/wp-content/uploads/2016/08/Progress.jpg" />
-<script>
-    let url = new URL(document.location);
-    let code = url.searchParams.get("code");
-    window.addEventListener("onload", () => {
-        document.getElementById("code").innerHTML = code + "<br>"+ url;
-    });
-</script>
+    <title>Test Code Embed</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=yes">
+    <script>
+        let url = new URL(document.location);
+        let code = url.searchParams.get("code");
+        window.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("code").innerHTML = code + "<br>"+ url;
+        });
+    </script>
 
-<style>
-    body{
-        background-color: #FFFFE0;
-    }
-</style>
-
+    <style>
+        body{
+            background-color: #FFFFE0;
+        }
+    </style>
 </head>
     <body>
         <div id="code">
