@@ -47,13 +47,15 @@ function executeCode(code){
             return {
                 "resultType":RESULT_TYPES.ERROR,
                 "errorType":ERROR_TYPES.TIMEOUT,
-                "error": err
+                "error": err,
+                "output": finalOutput
             };
         }else{
             return {
                 "resultType":RESULT_TYPES.ERROR,
                 "errorType":ERROR_TYPES.EXECUTION,
-                "error": err
+                "error": err,
+                "output": finalOutput
             };
         }
     }
@@ -63,7 +65,8 @@ function executeCode(code){
         return {
             "resultType":RESULT_TYPES.ERROR,
             "errorType":ERROR_TYPES.ASYNC,
-            "error": err
+            "error": err,
+            "output": finalOutput
         };
     })
     
@@ -77,5 +80,3 @@ function executeCode(code){
 
 module.exports = {executeCode, RESULT_TYPES, ERROR_TYPES};
 
-//console.log(executeCode("while(true){}"));
-console.log(executeCode(" for(let i=0;i<5;i++){ prinat('hi')}"));

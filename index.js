@@ -1,3 +1,4 @@
+"use strict";
 const Discord = require("discord.js");
 const {executeCode, RESULT_TYPES, ERROR_TYPES} = require("./executeCode.js");
 require("dotenv").config();
@@ -16,13 +17,11 @@ client.on("message", function(message) {
 
   const commandBody = message.content.trim().slice(prefix.length);
   const lines = commandBody.split('\n');
-  console.log(lines)
   if(lines.length == 0){
     return;
   }
 
   const command = lines[0].split(' ')[0].toLowerCase().trim();
-    console.log(command)
 
   if (command === "ping") {
     const timeTaken = Date.now() - message.createdTimestamp;
@@ -30,7 +29,7 @@ client.on("message", function(message) {
   }
 
   else if (command === "run") {
-    restOfCommand = commandBody.slice("run".length).trim()
+    const restOfCommand = commandBody.slice("run".length).trim()
     if(restOfCommand.length === 0){ //message is only '!run'
         message.reply(`uh ok but i need some code`);
         return
@@ -40,11 +39,7 @@ client.on("message", function(message) {
     //actually run the code
     let executionResult = executeCode(codeLines);
 
-    console.log(executionResult.resultType);
-    console.log("Executed");
-
     if (executionResult.resultType !== RESULT_TYPES.SUCCESS){
-        console.log("in here");
         let failMessage = `oh no. im sorry. something really broke:\n${executionResult.error}`;
         if(executionResult.errorType == ERROR_TYPES.TIMEOUT){
             failMessage = `oh no i tried running your code but it took too long and i had to stop it. im sorry`
@@ -55,7 +50,11 @@ client.on("message", function(message) {
         } else if(executionResult.errorType == ERROR_TYPES.ASYNC){
             failMessage = `oh no. im sorry. i had some trouble running your code. heres what it said:\n${executionResult.error}`
         }
-        console.log(failMessage);
+        if(executionResult.output && executionResult.output.length > 0){
+            lastBitOfOutput = limitOutputSize(returnedOutput, MAX_CHARS, MAX_LINES);
+            failMessage += `\nat least before that, your code said this:\n${executionResult.lastBitOfOutput}`
+        }
+
         message.reply(failMessage);
         return;
     }
@@ -64,14 +63,12 @@ client.on("message", function(message) {
     const returnedOutput = executionResult.output;
     
     //don't flood the channel, keep output nice and slow
-    const MAX_CHARS = 300;
-    const MAX_LINES = 10;
+    const MAX_CHARS = 30;
+    const MAX_LINES = 15;
 
     if (returnedOutput.length > MAX_CHARS || returnedOutput.split("\n").length > MAX_LINES){
-        returnedOutput = returnedOutput.split(-MAX_CHARS);
-        returnedOutput = returnedOutput.split("\n").slice(0,MAX_LINES).join("\n");
-
-        message.reply(`ok! your program said too many things so here's the last things it said:\n${returnedOutput}`);
+        const possiblyChoppedMessage = limitOutputSize(returnedOutput, MAX_CHARS, MAX_LINES);
+        message.reply(`ok! your program said too many things so here's the last things it said:\n${possiblyChoppedMessage}`);
         return;
     }
 
@@ -79,5 +76,17 @@ client.on("message", function(message) {
     return;
   }
 });
+
+function limitOutputSize(string, max_chars, max_lines){
+        let oldLength = string.length;
+        string = string.slice(-max_chars);
+        string = string.split("\n").slice(-max_lines).join("\n");
+
+        if (string.length != oldLength){
+            string = "..."+string //show we've chopped it off
+        }
+
+        return string;
+}
 
 client.login(process.env.DISCORD_TOKEN);
