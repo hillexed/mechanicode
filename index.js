@@ -11,6 +11,12 @@ client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
+
+    
+//don't flood the channel, keep output nice and slow
+const MAX_CHARS = 30;
+const MAX_LINES = 15;
+
 client.on("message", function(message) {
   if (message.author.bot) return;
   if (!message.content.trim().startsWith(prefix)) return;
@@ -50,9 +56,9 @@ client.on("message", function(message) {
         } else if(executionResult.errorType == ERROR_TYPES.ASYNC){
             failMessage = `oh no. im sorry. i had some trouble running your code. heres what it said:\n${executionResult.error}`
         }
-        if(executionResult.output && executionResult.output.length > 0){
-            lastBitOfOutput = limitOutputSize(returnedOutput, MAX_CHARS, MAX_LINES);
-            failMessage += `\nat least before that, your code said this:\n${executionResult.lastBitOfOutput}`
+        if(executionResult.output !== undefined && executionResult.output.length > 0){
+            const lastBitOfOutput = limitOutputSize(executionResult.output, MAX_CHARS, MAX_LINES);
+            failMessage += `\nat least before that, your code said this:\n${lastBitOfOutput}`
         }
 
         message.reply(failMessage);
@@ -61,10 +67,6 @@ client.on("message", function(message) {
 
     //success!
     const returnedOutput = executionResult.output;
-    
-    //don't flood the channel, keep output nice and slow
-    const MAX_CHARS = 30;
-    const MAX_LINES = 15;
 
     if (returnedOutput.length > MAX_CHARS || returnedOutput.split("\n").length > MAX_LINES){
         const possiblyChoppedMessage = limitOutputSize(returnedOutput, MAX_CHARS, MAX_LINES);

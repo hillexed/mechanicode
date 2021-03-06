@@ -20,6 +20,9 @@ function executeCode(code){
 
     printFunc = function(thingToPrint){
         finalOutput += thingToPrint + "\n"
+        if(finalOutput.length > 2000){
+            finalOutput = finalOutput.slice(-2000); //only keep last 2000 characters
+        }
     }
 
     const vm = new VM({
@@ -27,7 +30,7 @@ function executeCode(code){
         external: ["p5"],
         sandbox: {
             "print":printFunc,
-            "console":{log: (x)=> printFunc(x)}}
+            "console":{log: printFunc}}
     });
 
     try {
