@@ -1,6 +1,7 @@
 "use strict";
 const Discord = require("discord.js");
 const {executeCode, RESULT_TYPES, ERROR_TYPES} = require("./executeCode.js");
+const {runP5Code } = require("./runp5Code.js");
 require("dotenv").config();
 
 const client = new Discord.Client();
@@ -32,6 +33,24 @@ client.on("message", function(message) {
   if (command === "ping") {
     const timeTaken = Date.now() - message.createdTimestamp;
     message.reply(`hi im here`);
+  }
+
+  else if (command === "draw"){
+    const restOfCommand = commandBody.slice("draw".length).trim()
+    if(restOfCommand.length === 0){ //message is only '!run'
+        message.reply(`uh ok but i need some code`);
+        return
+    }
+    const codeLines = restOfCommand;
+
+    runP5Code(codeLines).then(async (webmbuffer)=>{
+        let attachment = new Discord.MessageAttachment(webmbuffer, "yourcoolart.webm");
+        //await fs.writeFile("temp.webm",webmbuffer);
+        message.reply("ok heres your video", attachment);
+    }).catch((err)=>{
+        console.error(err)
+        message.reply(`oh no. uhh heres the error message i got: ` + err.error);
+    });
   }
 
   else if (command === "run") {

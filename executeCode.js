@@ -1,8 +1,5 @@
 
 const {NodeVM, VM, VMScript} = require('vm2');
-const {
-  Worker, isMainThread, parentPort, workerData
-} = require('worker_threads');
 
 const RESULT_TYPES = {
     SUCCESS: 'success',

@@ -3,6 +3,8 @@ const fs = require('fs').promises;
 const { createCanvas, loadImage } = require('canvas'); //think i dont need this
 const {NodeVM} = require('vm2');
 
+//based on http://jeremybouny.fr/en/articles/server_side_canvas_node/
+
 
 let p5LibraryCode = null;
 let whammyCode = null;
@@ -160,7 +162,7 @@ async function runP5Code(drawCode){
     })
 }
 
-
+module.exports = { runP5Code };
 
 
 //test
@@ -179,7 +181,7 @@ function draw() {
   x += 1
 }`;
 
-runP5Code(drawCode).then(async (webm)=>{console.log(webm);await fs.writeFile("temp.webm",webm);}).catch((err)=>{console.error(err)});
+//runP5Code(drawCode).then(async (webm)=>{console.log(webm);await fs.writeFile("temp.webm",webm);}).catch((err)=>{console.error(err)});
 
 
 //runP5Code("function setup(){}; function draw(){}").then((webm)=>{console.log(webm)}).catch((err)=>{console.error(err)});

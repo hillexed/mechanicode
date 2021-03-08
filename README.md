@@ -1,8 +1,10 @@
 # Mechanicode
 
-A discord bot that runs javascript code and prints it back out. Uses [https://github.com/patriksimek/vm2](vm2) for sandboxing.
+A discord bot that runs p5.js code, server-side renders a webm, and sends it back. It can also run javascript code and prints it back out. 
 
-Based on [https://github.com/ManimCommunity/DiscordManimator](DiscordManimator)
+Naturally, running untrusted code is a pretty bad idea. This uses [https://github.com/patriksimek/vm2](vm2) for sandboxing, but I don't trust this to be safe at all right now. 
+
+Contributions welcome!
 
 
 ### Deploying the Bot
