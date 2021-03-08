@@ -5,7 +5,7 @@ const {NodeVM} = require('vm2');
 
 
 let p5LibraryCode = null;
-let webmWriterCode = null;
+let whammyCode = null;
 
 
 const RESULT_TYPES = {
@@ -25,8 +25,8 @@ async function runP5Code(drawCode){
         if(p5LibraryCode === null){
             p5LibraryCode = await fs.readFile('./lib/p5.js', 'utf8');
         }
-        if(webmWriterCode === null){
-            webmWriterCode = await fs.readFile('./lib/webm-writer-0.3.0.js', 'utf8');
+        if(whammyCode === null){
+            whammyCode = await fs.readFile('./lib/whammy.js', 'utf8');
         }
 
         const dom = new jsdom.JSDOM(`<!DOCTYPE html><html><head></head><body></body></html>`, { predendToBeVisual: true, runScripts: 'outside-only', url: "http://addingthismakeslocalstoragenotfail.com" });
@@ -69,15 +69,15 @@ async function runP5Code(drawCode){
                 "_sendBlobOut": _recieveWebmBlob,
                 "_errorNoSetup": _errorNoSetup,
                 "_errorNoDraw": _errorNoDraw,
-                numFrames: 3, //eventually, framerate * duration
-                framerate: 3,
+                numFrames: 60, //eventually, framerate * duration
+                framerate: 30,
                 localStorage: {
                     setItem: ()=>{}, //mock so that accessing won't error
                     removeItem: ()=>{},
                 },
             },
             require: { external: {
-                modules: ["sharp"], //used to convert PNG to WEBP for webm export
+                modules: ["sharp","atob"], //used to convert PNG to WEBP for webm export
             }},
         });
 
@@ -99,17 +99,12 @@ async function runP5Code(drawCode){
             _errorNoSetup();
             return;
         }
-        module = undefined; //trick WebMWriter into thinking it's running in a browser so it won't try require("fs") and crash because of the sandbox
         const sharp = require("sharp");
         `  + 
-        webmWriterCode + 
+        whammyCode + 
         p5LibraryCode + 
         `
-        let videoWriter = new window.WebMWriter({
-            quality: 0.95, //1.0 not supported :(
-            frameRate: framerate,
-            transparent: false,
-        });
+        var encoder = new Whammy.Video(framerate);
 
         function getWebpFromCanvas(canvas, callback){
             //get a PNG from the canvas, turn it into a webp
@@ -129,31 +124,17 @@ async function runP5Code(drawCode){
             userSetup();
 
             let numFramesCaptured = 0;
-            let _vidSent = false;
-
             _registeredMethods.post.push( ()=>{
-                //I could call canvas.toDataURL() here to get a PNG, but I want to pack these images into a webm (and do it in JS without touching the filesytem) so all this mess has to exist :(
-                getWebpFromCanvas(canvas, (base64webpstring) => {
-                    videoWriter.addFrame( base64webpstring );
-                    numFramesCaptured += 1;
-                    if(numFramesCaptured > numFrames && !_vidSent){
-                        noLoop();
-                        global.Blob = window.Blob;
-                        videoWriter.complete().then((blob) => {
-                            const fileReader = new window.FileReader();
-                            fileReader.addEventListener("load", () => {
-                                let buff = Buffer.from(fileReader.result, "");
-                                console.log(buff.toString());
-                                console.log(5);
-                                _sendBlobOut(buff.toString());
-                                //_sendBlobOut(fileReader.result);
-                                _vidSent = true;
-                            });
-                            fileReader.readAsDataURL(blob);
-                            
-                        });
-                    }
-                });
+                    //I could call canvas.toDataURL() here to get a PNG, but I want to pack these images into a webm (and do it in JS without touching the filesytem) so all this mess has to exist :(
+                    getWebpFromCanvas(canvas, (base64webpstring) => {
+                        encoder.add( base64webpstring );
+                        numFramesCaptured += 1;
+                        if(numFramesCaptured > numFrames){
+                            noLoop();
+                            let output = encoder.compile(true);
+                            _sendBlobOut(new Buffer(output));
+                        }
+                    });
             });
         }
         `;
@@ -195,9 +176,10 @@ function draw() {
   console.log("Draw called!");
   background((x + 50) % 255);
   ellipse(50,50,80,80);
+  x += 1
 }`;
 
-runP5Code(drawCode).then(async (webm)=>{await fs.writeFile("temp.webm",webm);}).catch((err)=>{console.error(err)});
+runP5Code(drawCode).then(async (webm)=>{console.log(webm);await fs.writeFile("temp.webm",webm);}).catch((err)=>{console.error(err)});
 
 
 //runP5Code("function setup(){}; function draw(){}").then((webm)=>{console.log(webm)}).catch((err)=>{console.error(err)});
