@@ -26,11 +26,12 @@ const {NodeVM} = require('vm2');
 
 let images = []
 
-function saveCanvasImage(canvas){
+let imageRecieved = false;
+function _recieveWebmBlob(blob){
     try{
-        let image = canvas.toDataURL();
-        images.push(image);
-        console.log(image);
+        imageRecieved = true;
+        console.log(blob);
+        
     }catch(err){
         console.error(err);   
     }
@@ -46,54 +47,94 @@ const vm = new NodeVM({
         "navigator":{
             "userAgent": "no"
         },
+        
         "screen":{
             width:600,
             height:600,
         },
-        "_saveCanvas": saveCanvasImage,
+        "_sendBlobOut": _recieveWebmBlob,
         numFrames: 3, //eventually, framerate * duration
+        framerate: 3,
         localStorage: {
             setItem: ()=>{}, //mock so that accessing won't error
             removeItem: ()=>{},
         },
-    }
+    },
+    require: { external: {
+        modules: ["sharp"],
+    }},
 });
 
 
-//fs.readFile('./p5.min.js', 'utf8' , (err, p5Code) => {
-fs.readFile('./p5.js', 'utf8' , (err, p5Code) => {
-    if (err) {
-        console.error(err)
-        return
-    }
+//fs.readFile('./lib/p5.min.js', 'utf8' , (err, p5Code) => {
 
-    const fullCode = drawCode + 
-`
-    if(draw){window.draw = draw;} //needed for p5 to detect them
-    if(setup){window.setup = setup;}
-`  + 
-    p5Code + 
-`
-    let originalSetup = setup //hook to make background() and line() available in global context
-    let canvas = null;
-    window.setup = function(){
-        for(var addedP5Func in window){  //make p5-registered functions like window.background available as "background()"
-         global[addedP5Func] = window[addedP5Func]
+fs.readFile('./lib/p5.js', 'utf8' , (err, p5Code) => {
+    fs.readFile('./lib/webm-writer-0.3.0.js', 'utf8' , (err2, webmWriterCode) => {
+        if (err) {
+            console.error(err)
+            return
         }
-        canvas = this.canvas; //grab canvas
-        originalSetup();
-
-        noLoop();
-    }
-    let originalDraw = draw;
-    window.draw = function(){ //will run once thanks to
-        for(let i=0;i<numFrames;i++){
-                originalDraw();
-                //todo: hook millis()
-                _saveCanvas(canvas);
+        if (err2) {
+            console.error(err2)
+            return
         }
-    }
-  `;
+        console.log("Drawing!");
 
-  let returnVal = vm.run(fullCode, "script.js");
+        const fullCode = drawCode + 
+        `
+        if(draw){window.draw = draw;} //needed for p5 to detect them
+        if(setup){window.setup = setup;}
+        module = undefined; //trick WebMWriter into not requiring fs
+        const sharp = require("sharp");
+        `  + 
+        webmWriterCode + 
+        p5Code + 
+        `
+        let originalSetup = setup //hook to make background() and line() available in global context
+        let videoWriter = new window.WebMWriter({
+            quality: 0.95, //1.0 not supported :(
+            frameRate: framerate,
+            transparent: false,
+        });
+
+        function getWebpFromCanvas(canvas, callback){
+            const bufferData = canvas.toDataURL().slice("data:image/png;base64,".length);
+            const buffer=Buffer.from(bufferData,'base64');
+            let webpFrame = sharp(buffer).webp({ lossless: false }).toBuffer().then( data => {
+                const base64webpstring = "data:image/webp;base64,"+data.toString('base64');
+                callback(base64webpstring);
+            }).catch(err => { console.error("Error converting frame to webp: " + err);});
+        }
+
+        window.setup = function(){
+            for(var addedP5Func in window){  //make p5-registered functions like window.background available as "background()"
+             global[addedP5Func] = window[addedP5Func]
+            }
+            let canvas = this.canvas; //grab canvas
+            originalSetup();
+
+            let numFramesCaptured = 0;
+            _registeredMethods.post.push( ()=>{
+                    //I could call canvas.toDataURL() here to get a PNG, but I want to pack these images into a webm (and do it in JS without touching the filesytem) so all this mess has to exist :(
+                    getWebpFromCanvas(canvas, (base64webpstring) => {
+                        videoWriter.addFrame( base64webpstring );
+                        numFramesCaptured += 1;
+                        if(numFramesCaptured > numFrames){
+                            noLoop();
+                            global.Blob = window.Blob;
+                            videoWriter.complete().then((blob) => {
+                                const fileReader = new window.FileReader();
+                                fileReader.addEventListener("load", () => {
+                                    _sendBlobOut(fileReader.result);
+                                });
+                                fileReader.readAsDataURL(blob);
+                            });
+                        }
+                    });
+            });
+        }
+        `;
+
+        let returnVal = vm.run(fullCode, "script.js");
+    });
 })
